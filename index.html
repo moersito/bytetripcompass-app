@@ -1,18 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ByteTrip Compass</title>
     
-    <!-- PWA META TAGS (BARU) -->
-    <meta name="theme-color" content="#047857"> <!-- Warna Emerald-700 -->
+    <!-- PWA META TAGS -->
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/047857/ffffff?text=BTC">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/047857/ffffff.png?text=BTC">
     
+    <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- LEAFLET JS CSS (Untuk Peta OSM) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Amiri:wght@400;700&display=swap');
         
@@ -38,6 +44,9 @@
 
         .timeline-line::before { content: ''; position: absolute; left: 19px; top: 32px; bottom: -16px; width: 2px; background-color: #e2e8f0; z-index: 0; }
         .timeline-item:last-child .timeline-line::before { display: none; }
+        
+        /* Z-index safety for Leaflet inside modal */
+        .leaflet-container { z-index: 0 !important; }
     </style>
 </head>
 <body>
@@ -48,31 +57,31 @@
         <div id="app-screens">
             
             <!-- 1. SPLASH / LOGIN -->
-            <div id="screen-splash" class="screen active bg-emerald-700 z-50">
-                <div class="flex flex-col items-center justify-center h-full text-white px-6">
-                    <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
-                        <svg class="w-12 h-12 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div id="screen-splash" class="screen active bg-white z-50">
+                <div class="flex flex-col items-center justify-center h-full text-slate-900 px-8 relative z-10">
+                    
+                    <div class="text-center mb-10 w-full">
+                        <img src="img/ByteTripCompass_logo.jpg" alt="ByteTrip Compass Logo" class="w-3/4 mx-auto mb-3 object-contain mix-blend-multiply">
+                        <p class="text-slate-500 text-[13px] font-medium mt-2">Sahabat Ibadah Anda di Tanah Suci</p>
                     </div>
-                    <h1 class="text-3xl font-extrabold tracking-tight mb-2">ByteTrip Compass</h1>
-                    <p class="text-emerald-100 text-center text-[13px] mb-12">Sahabat Ibadah Anda di Tanah Suci</p>
-                    <div class="w-full bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
-                        <label class="block text-emerald-100 text-xs font-bold mb-2 uppercase tracking-wider">Nomor Paspor</label>
-                        <input type="text" value="A1234567" class="w-full bg-white text-emerald-900 text-lg font-bold text-center py-3.5 rounded-xl focus:outline-none mb-4 uppercase">
-                        <button onclick="handleLogin()" class="w-full bg-white text-emerald-800 font-extrabold text-[15px] py-3.5 rounded-xl shadow-lg active:scale-95 transition-transform">Masuk Aplikasi</button>
+
+                    <div class="w-full bg-slate-50 border border-slate-200 p-6 rounded-3xl shadow-sm">
+                        <label class="block text-slate-700 text-xs font-bold mb-2 uppercase tracking-wider">Nomor Paspor</label>
+                        <input type="text" value="A1234567" class="w-full bg-white text-emerald-900 text-lg font-bold text-center py-3.5 rounded-xl border border-slate-300 focus:outline-none focus:border-emerald-600 mb-4 uppercase transition-colors shadow-inner">
+                        <button onclick="handleLogin()" class="w-full bg-emerald-700 text-white font-extrabold text-[15px] py-3.5 rounded-xl shadow-md hover:bg-emerald-800 active:scale-95 transition-all">Masuk</button>
                     </div>
                 </div>
             </div>
 
             <!-- 2. DASBOR -->
             <div id="screen-dasbor" class="screen">
-                <!-- <div class="flex justify-between items-center px-5 pt-4 pb-2 bg-emerald-700 z-10 text-[13px] font-semibold text-white">
-                    <span>9:41</span>
-                    <div class="flex space-x-1.5 items-center">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 16 16"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17 6h-2V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1v-1h2a2 2 0 002-2V8a2 2 0 00-2-2zm-2 12H5V6h10v12zm4-3h-2V9h2v6z"></path></svg>
-                    </div>
-                </div> -->
-                <div class="bg-emerald-700 px-5 pt-2 pb-6 rounded-b-3xl shadow-md shrink-0 relative z-10">
+                
+                <div class="bg-white px-5 pt-10 pb-3 flex justify-between items-center z-10 shadow-sm border-b border-slate-100">
+                    <img src="img/ByteTripCompass_logo.jpg" alt="ByteTrip Compass" class="h-7 object-contain mix-blend-multiply">
+                    <button class="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded-md shadow-sm uppercase border border-amber-200">Offline</button>
+                </div>
+                
+                <div class="bg-emerald-700 px-5 pt-5 pb-6 rounded-b-3xl shadow-md shrink-0 relative z-0">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-700 font-black text-xl shadow-sm border-2 border-emerald-400">HM</div>
@@ -81,7 +90,6 @@
                                 <p class="text-emerald-100 text-[11px] font-medium">Paspor: A1234567 • Bus 02</p>
                             </div>
                         </div>
-                        <button class="bg-amber-400 text-amber-900 text-[9px] font-black px-2 py-1 rounded-md shadow-sm uppercase">Offline</button>
                     </div>
                 </div>
 
@@ -93,7 +101,7 @@
 
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <img src="https://placehold.co/100x100/0f172a/ffffff?text=UF" class="w-12 h-12 rounded-full object-cover border border-slate-200">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-500"><i class="fas fa-user-tie text-xl"></i></div>
                             <div>
                                 <p class="text-[10px] font-bold text-slate-400 uppercase">Tour Leader Anda</p>
                                 <h3 class="text-[14px] font-bold text-slate-900">Ust. Fulan Al-Hafidz</h3>
@@ -106,22 +114,22 @@
                         <div class="bg-white rounded-xl p-3.5 shadow-sm border border-slate-200">
                             <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Hotel Saat Ini</p>
                             <h3 class="text-[13px] font-black text-slate-900 truncate">Pullman Zamzam</h3>
-                            <p class="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l4-2 4 2V6z" clip-rule="evenodd"></path></svg> Kamar 304</p>
+                            <p class="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1"><i class="fas fa-bed"></i> Kamar 304</p>
                         </div>
                         <div class="bg-white rounded-xl p-3.5 shadow-sm border border-slate-200">
                             <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Status Koper</p>
                             <h3 class="text-[13px] font-black text-slate-900 truncate">Sudah Tiba</h3>
-                            <p class="text-[11px] font-bold text-blue-600 mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4z" clip-rule="evenodd"></path></svg> Depan Kamar</p>
+                            <p class="text-[11px] font-bold text-blue-600 mt-1 flex items-center gap-1"><i class="fas fa-suitcase"></i> Depan Kamar</p>
                         </div>
                     </div>
 
                     <!-- ITINERARY HISTORY -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                        <h3 class="text-[14px] font-black text-slate-900 mb-4 flex items-center gap-2"><svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Jadwal Hari Ini</h3>
+                        <h3 class="text-[14px] font-black text-slate-900 mb-4 flex items-center gap-2"><i class="fas fa-list-ul text-emerald-600"></i> Jadwal Hari Ini</h3>
                         <div class="pl-2">
                             <div class="timeline-item relative flex items-start gap-4 pb-6">
                                 <div class="timeline-line"></div>
-                                <div class="relative z-10 w-6 h-6 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center shrink-0 mt-0.5"><svg class="w-3 h-3 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>
+                                <div class="relative z-10 w-6 h-6 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-check text-[10px] text-slate-500"></i></div>
                                 <div class="flex-1"><h4 class="font-bold text-[13px] text-slate-500 line-through decoration-slate-300">Sholat Subuh Berjamaah</h4><p class="text-[11px] text-slate-400 mt-0.5">04:00 - Selesai</p></div>
                             </div>
                             <div class="timeline-item relative flex items-start gap-4 pb-6">
@@ -141,8 +149,12 @@
 
             <!-- 3. DOKUMEN -->
             <div id="screen-docs" class="screen">
-                <header class="flex justify-between items-center px-5 pt-12 pb-4 bg-emerald-700 z-10 shrink-0 text-white shadow-md">
+                <header class="flex justify-between items-center px-4 pt-10 pb-3 bg-white border-b border-slate-100 z-10 shrink-0 text-slate-900 shadow-sm">
+                    <div class="w-10"></div>
                     <h1 class="text-[16px] font-bold text-center flex-1">Jadwal & Dokumen</h1>
+                    <div class="w-10 flex justify-end">
+                        <img src="img/ByteTripCompass_logo.jpg" class="h-6 object-contain mix-blend-multiply">
+                    </div>
                 </header>
                 <div class="flex border-b border-slate-200 bg-white shrink-0">
                     <button onclick="switchDocTab('jadwal')" id="tab-jadwal" class="flex-1 py-3 text-[13px] font-bold border-b-2 border-emerald-600 text-emerald-700 transition-colors">Jadwal Tiket</button>
@@ -159,9 +171,9 @@
                             <div class="flex items-center justify-between mt-4">
                                 <div class="text-center"><h2 class="text-2xl font-black text-slate-900">CGK</h2><p class="text-[10px] text-slate-500">Jakarta (09:00)</p></div>
                                 <div class="flex-1 flex flex-col items-center px-4">
-                                    <svg class="w-5 h-5 text-emerald-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                                    <div class="w-full h-px bg-dashed bg-slate-300 relative"></div>
-                                    <p class="text-[10px] text-slate-400 mt-1">Saudia SV815</p>
+                                    <i class="fas fa-plane text-emerald-600 mb-2"></i>
+                                    <div class="w-full h-px border-t-2 border-dashed border-slate-300 relative"></div>
+                                    <p class="text-[10px] text-slate-400 mt-2 font-bold">Saudia SV815</p>
                                 </div>
                                 <div class="text-center"><h2 class="text-2xl font-black text-slate-900">JED</h2><p class="text-[10px] text-slate-500">Jeddah (14:30)</p></div>
                             </div>
@@ -171,47 +183,47 @@
                     <!-- Tab Dokumen List -->
                     <div id="content-dokumen" class="hidden">
                         <ul class="divide-y divide-slate-100 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <li onclick="viewDoc('Paspor Jamaah', 'https://placehold.co/600x800/0f172a/ffffff?text=FOTO+PASPOR\n\nA1234567')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Paspor Jamaah', 'https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg></div>
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><i class="fas fa-passport text-lg"></i></div>
                                     <div><p class="text-[14px] font-bold text-slate-900">Paspor</p><p class="text-[11px] text-emerald-600 font-semibold">Berlaku s/d 12 Ags 2030</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
-                            <li onclick="viewDoc('Visa KSA', 'https://placehold.co/600x800/10b981/ffffff?text=VISA+UMROH\n\nValid')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Visa KSA', 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><i class="fas fa-file-signature text-lg"></i></div>
                                     <div><p class="text-[14px] font-bold text-slate-900">Visa</p><p class="text-[11px] text-emerald-600 font-semibold">Telah Terbit</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
-                            <li onclick="viewDoc('Tiket Berangkat', 'https://placehold.co/800x600/f59e0b/ffffff?text=E-TICKET\n\nCGK+-+JED')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Tiket Berangkat', 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></div>
-                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Pesawat Berangkat</p><p class="text-[11px] text-slate-500">Saudia SV815</p></div>
+                                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><i class="fas fa-ticket-alt text-lg"></i></div>
+                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Berangkat</p><p class="text-[11px] text-slate-500">Saudia SV815</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
-                            <li onclick="viewDoc('Tiket Pulang', 'https://placehold.co/800x600/f59e0b/ffffff?text=E-TICKET\n\nJED+-+CGK')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Tiket Pulang', 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></div>
-                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Pesawat Pulang</p><p class="text-[11px] text-slate-500">Saudia SV816</p></div>
+                                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><i class="fas fa-ticket-alt text-lg"></i></div>
+                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Pulang</p><p class="text-[11px] text-slate-500">Saudia SV816</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
-                            <li onclick="viewDoc('Voucher Hotel Mekkah', 'https://placehold.co/600x800/8b5cf6/ffffff?text=VOUCHER\n\nPullman+Zamzam')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Voucher Hotel Mekkah', 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg></div>
-                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Hotel XYZ Mekkah</p><p class="text-[11px] text-slate-500">Check-in: 12 Des</p></div>
+                                    <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><i class="fas fa-hotel text-lg"></i></div>
+                                    <div><p class="text-[14px] font-bold text-slate-900">Hotel Mekkah</p><p class="text-[11px] text-slate-500">Check-in: 12 Des</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
-                            <li onclick="viewDoc('Voucher Hotel Madinah', 'https://placehold.co/600x800/8b5cf6/ffffff?text=VOUCHER\n\nHotel+Madinah')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <li onclick="viewDoc('Voucher Hotel Madinah', 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80')" class="px-4 py-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg></div>
-                                    <div><p class="text-[14px] font-bold text-slate-900">Tiket Hotel ABC Madinah</p><p class="text-[11px] text-slate-500">Check-in: 17 Des</p></div>
+                                    <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600"><i class="fas fa-hotel text-lg"></i></div>
+                                    <div><p class="text-[14px] font-bold text-slate-900">Hotel Madinah</p><p class="text-[11px] text-slate-500">Check-in: 17 Des</p></div>
                                 </div>
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
                             </li>
                         </ul>
                     </div>
@@ -220,10 +232,14 @@
 
             <!-- 4. DOA -->
             <div id="screen-doa" class="screen">
-                <header class="flex justify-between items-center px-5 pt-12 pb-4 bg-emerald-700 z-10 shrink-0 text-white shadow-md">
+                <header class="flex justify-between items-center px-4 pt-10 pb-3 bg-white border-b border-slate-100 z-10 shrink-0 text-slate-900 shadow-sm">
+                    <div class="w-10"></div>
                     <h1 class="text-[16px] font-bold text-center flex-1">Panduan & Doa</h1>
+                    <div class="w-10 flex justify-end">
+                        <img src="img/ByteTripCompass_logo.jpg" class="h-6 object-contain mix-blend-multiply">
+                    </div>
                 </header>
-                <div class="px-4 py-3 bg-white border-b border-slate-100 flex gap-2 z-10 shrink-0">
+                <div class="px-4 py-3 bg-white border-b border-slate-100 flex gap-2 z-10 shrink-0 shadow-sm">
                     <input type="text" placeholder="Cari doa (misal: Tawaf)..." class="border border-slate-300 rounded-lg px-4 py-2.5 text-[12px] font-medium text-slate-700 outline-none focus:border-emerald-600 flex-1 bg-slate-50">
                 </div>
                 <div class="scrollable-content px-4 pt-4 pb-28 space-y-3">
@@ -241,13 +257,108 @@
                             <p class="text-[12px] font-medium text-slate-600 italic">"Labbaikallahumma 'Umratan"</p>
                         </div>
                     </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Melihat Ka'bah</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُمَّ زِدْ هَذَا الْبَيْتَ تَشْرِيفًا وَتَعْظِيمًا وَتَكْرِيمًا وَمَهَابَةً</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahumma zid hadzal baita tasyrifan wa ta'dhiman wa takriman wa mahabatan"</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Tawaf Putaran 1</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Subhanallah walhamdulillah wala ilaha illallah wallahu akbar"</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Minum Air Zamzam</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا وَاسِعًا وَشِفَاءً مِنْ كُلِّ دَاءٍ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahumma inni as-aluka 'ilman naafi'an wa rizqan waasi'an wa syifaa'an min kulli daa-in"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Menuju Bukit Shafa</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Innas shafa wal marwata min sya'aairillah"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa di Atas Bukit Shafa</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahu akbar, Allahu akbar, Allahu akbar"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Sa'i Putaran 1</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُمَّ اسْتَعْمِلْنِي بِسُنَّةِ نَبِيِّكَ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahummas-ta'milnii bisunnati nabiyyika"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Diantara Pilar Hijau (Bagi Laki-laki)</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">رَبِّ اغْفِرْ وَارْحَمْ وَتَجَاوَزْ عَمَّا تَعْلَمْ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Rabbighfir warham watajaawaz 'ammaa ta'lam"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Tahallul (Bercukur)</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُمَّ اجْعَلْ لِكُلِّ شَعْرَةٍ نُورًا يَوْمَ الْقِيَامَةِ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahummaj'al likulli sya'ratin nuuran yaumal qiyaamati"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Selesai Umroh</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">اللَّهُمَّ تَقَبَّلْ مِنَّا عُمْرَتَنَا</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Allahumma taqabbal minna 'umratanaa"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Masuk Masjid Nabawi</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">بِسْمِ اللَّهِ وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Bismillah wasshalaatu wassalaamu 'alaa rasuulillah"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Salam kepada Rasulullah</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">السَّلَامُ عَلَيْكَ يَا رَسُولَ اللَّهِ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Assalaamu 'alaika yaa rasuulallah"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Salam kepada Abu Bakar</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">السَّلَامُ عَلَيْكَ يَا أَبَا بَكْرٍ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Assalaamu 'alaika yaa abaa bakrin"</p>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Doa Salam kepada Umar</h3></div>
+                        <div class="p-4">
+                            <p class="arabic-text text-2xl leading-[2.2] text-slate-900 text-right mb-3">السَّلَامُ عَلَيْكَ يَا عُمَرُ</p>
+                            <p class="text-[12px] font-medium text-slate-600 italic">"Assalaamu 'alaika yaa 'umaru"</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- 5. PETA LOKASI -->
             <div id="screen-peta" class="screen">
-                <header class="flex justify-between items-center px-5 pt-12 pb-4 bg-emerald-700 z-10 shrink-0 text-white shadow-md">
+                <header class="flex justify-between items-center px-4 pt-10 pb-3 bg-white border-b border-slate-100 z-10 shrink-0 text-slate-900 shadow-sm">
+                    <div class="w-10"></div>
                     <h1 class="text-[16px] font-bold text-center flex-1">Direktori Lokasi</h1>
+                    <div class="w-10 flex justify-end">
+                        <img src="img/ByteTripCompass_logo.jpg" class="h-6 object-contain mix-blend-multiply">
+                    </div>
                 </header>
                 <div class="scrollable-content px-4 pt-4 pb-28 space-y-4">
                     <!-- KOTA MEKKAH -->
@@ -257,16 +368,16 @@
                             <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 font-bold text-[11px] text-slate-700">Masjidil Haram</div>
                             <ul class="divide-y divide-slate-100">
                                 <li onclick="openMapModal('WC 6 Masjidil Haram')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-medium text-slate-800">WC 6</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-[13px] font-medium text-slate-800">WC 6</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                                 <li onclick="openMapModal('Pintu 8 Masjidil Haram')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-medium text-slate-800">Pintu 8</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-[13px] font-medium text-slate-800">Pintu 8</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                             </ul>
                             <div class="bg-slate-50 px-3 py-2 border-y border-slate-200 font-bold text-[11px] text-slate-700">Hotel</div>
                             <ul class="divide-y divide-slate-100">
-                                <li onclick="openMapModal('Hotel XYZ Mekkah')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-bold text-slate-900">Hotel XYZ (Saat Ini)</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <li onclick="openMapModal('Pullman Zamzam Mekkah')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
+                                    <span class="text-[13px] font-bold text-slate-900">Hotel Anda (Saat Ini)</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                             </ul>
                         </div>
@@ -278,16 +389,16 @@
                             <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 font-bold text-[11px] text-slate-700">Masjid Nabawi</div>
                             <ul class="divide-y divide-slate-100">
                                 <li onclick="openMapModal('Pintu 1 Masjid Nabawi')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-medium text-slate-800">Pintu 1</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-[13px] font-medium text-slate-800">Pintu 1</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                                 <li onclick="openMapModal('Makam Baqi')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-medium text-slate-800">Makam Baqiq</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-[13px] font-medium text-slate-800">Makam Baqiq</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                             </ul>
                             <div class="bg-slate-50 px-3 py-2 border-y border-slate-200 font-bold text-[11px] text-slate-700">Lainnya</div>
                             <ul class="divide-y divide-slate-100">
                                 <li onclick="openMapModal('Lokasi Miqot (Bir Ali)')" class="px-3 py-3 flex justify-between items-center cursor-pointer hover:bg-emerald-50">
-                                    <span class="text-[13px] font-medium text-slate-800">Lokasi Miqot</span><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-[13px] font-medium text-slate-800">Lokasi Miqot</span><i class="fas fa-map-marker-alt text-emerald-600"></i>
                                 </li>
                             </ul>
                         </div>
@@ -297,10 +408,12 @@
 
             <!-- 6. KAMUS OFFLINE -->
             <div id="screen-kamus" class="screen">
-                <header class="flex justify-between items-center px-5 pt-12 pb-4 bg-emerald-700 z-10 shrink-0 text-white shadow-md">
-                    <button onclick="navTo('screen-dasbor')" class="p-1 -ml-1 text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
+                <header class="flex justify-between items-center px-4 pt-10 pb-3 bg-white border-b border-slate-100 z-10 shrink-0 text-slate-900 shadow-sm">
+                    <button onclick="navTo('screen-dasbor')" class="p-1 -ml-1 text-slate-700"><i class="fas fa-chevron-left text-lg"></i></button>
                     <h1 class="text-[16px] font-bold text-center flex-1">Kamus Indonesia - Inggris</h1>
-                    <div class="w-8"></div>
+                    <div class="flex justify-end items-center w-10">
+                        <img src="img/ByteTripCompass_logo.jpg" class="h-6 object-contain mix-blend-multiply">
+                    </div>
                 </header>
                 <div class="px-4 py-3 bg-white border-b border-slate-100 shrink-0 shadow-sm z-10">
                     <input type="text" placeholder="Cari kata (contoh: harga, toilet)..." class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-[12px] font-medium text-slate-700 outline-none focus:border-emerald-600 bg-slate-50">
@@ -310,21 +423,371 @@
                         <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Berapa harganya?</h3></div>
                         <div class="p-4 flex items-center justify-between">
                             <div><p class="text-[16px] font-black text-slate-900 mb-1">How much is this?</p><p class="text-[12px] text-slate-500 italic">"Hau mach is dis?"</p></div>
-                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg></button>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana toilet / kamar mandi?</h3></div>
                         <div class="p-4 flex items-center justify-between">
                             <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the toilet?</p><p class="text-[12px] text-slate-500 italic">"Wer is de toilit?"</p></div>
-                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg></button>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya mau beli ini.</h3></div>
                         <div class="p-4 flex items-center justify-between">
                             <div><p class="text-[16px] font-black text-slate-900 mb-1">I want to buy this.</p><p class="text-[12px] text-slate-500 italic">"Ai won to bai dis."</p></div>
-                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg></button>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong! / Minta tolong!</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Help!</p><p class="text-[12px] text-slate-500 italic">"Help!"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tersesat.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I am lost.</p><p class="text-[12px] text-slate-500 italic">"Ai em lost."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana masjid?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the mosque?</p><p class="text-[12px] text-slate-500 italic">"Wer is de mosk?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Terima kasih.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Thank you.</p><p class="text-[12px] text-slate-500 italic">"Teng kyu."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Sama-sama.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">You are welcome.</p><p class="text-[12px] text-slate-500 italic">"Yu ar welkem."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Permisi / Maaf.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Excuse me.</p><p class="text-[12px] text-slate-500 italic">"Ekskyus mi."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tidak mengerti.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I don't understand.</p><p class="text-[12px] text-slate-500 italic">"Ai don andersten."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Ya.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Yes.</p><p class="text-[12px] text-slate-500 italic">"Yes."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tidak.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">No.</p><p class="text-[12px] text-slate-500 italic">"No."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Bisa tolong saya?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Can you help me?</p><p class="text-[12px] text-slate-500 italic">"Ken yu help mi?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Jam berapa sekarang?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">What time is it?</p><p class="text-[12px] text-slate-500 italic">"Wot taim is it?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana rumah sakit?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the hospital?</p><p class="text-[12px] text-slate-500 italic">"Wer is de hospitel?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya butuh dokter.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I need a doctor.</p><p class="text-[12px] text-slate-500 italic">"Ai nid e dokter."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong panggil polisi.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Please call the police.</p><p class="text-[12px] text-slate-500 italic">"Plis kol de polis."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana stasiun bus?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the bus station?</p><p class="text-[12px] text-slate-500 italic">"Wer is de bas steisyen?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Bisa kurangi harganya?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Can you give me a discount?</p><p class="text-[12px] text-slate-500 italic">"Ken yu giv mi e diskaun?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tidak mau.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I don't want it.</p><p class="text-[12px] text-slate-500 italic">"Ai don won it."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Maaf, saya terburu-buru.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Sorry, I am in a hurry.</p><p class="text-[12px] text-slate-500 italic">"Sori, ai em in e hari."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Bisa bicara lebih pelan?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Can you speak slower?</p><p class="text-[12px] text-slate-500 italic">"Ken yu spik slouwer?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong tuliskan.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Please write it down.</p><p class="text-[12px] text-slate-500 italic">"Plis rait it daun."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tunggu sebentar.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Wait a moment.</p><p class="text-[12px] text-slate-500 italic">"Weit e moument."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana restoran terdekat?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the nearest restaurant?</p><p class="text-[12px] text-slate-500 italic">"Wer is de nirest restoren?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya lapar.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I am hungry.</p><p class="text-[12px] text-slate-500 italic">"Ai em hangri."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya haus.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I am thirsty.</p><p class="text-[12px] text-slate-500 italic">"Ai em tersti."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Minta bill/bonnya.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Can I have the bill, please?</p><p class="text-[12px] text-slate-500 italic">"Ken ai hev de bil, plis?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Apakah air ini bisa diminum?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Is this water drinkable?</p><p class="text-[12px] text-slate-500 italic">"Is dis woter drinkebel?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tidak makan daging babi.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I don't eat pork.</p><p class="text-[12px] text-slate-500 italic">"Ai don it pork."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong tunjukkan jalannya.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Please show me the way.</p><p class="text-[12px] text-slate-500 italic">"Plis syo mi de wei."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Ke kiri.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Turn left.</p><p class="text-[12px] text-slate-500 italic">"Tern left."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Ke kanan.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Turn right.</p><p class="text-[12px] text-slate-500 italic">"Tern rait."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Jalan lurus.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Go straight.</p><p class="text-[12px] text-slate-500 italic">"Go streit."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Apakah jauh dari sini?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Is it far from here?</p><p class="text-[12px] text-slate-500 italic">"Is it far from hir?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya mau ke bandara.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I want to go to the airport.</p><p class="text-[12px] text-slate-500 italic">"Ai won to go to de erport."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Hati-hati!</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Be careful!</p><p class="text-[12px] text-slate-500 italic">"Bi kerful!"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Awas!</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Watch out!</p><p class="text-[12px] text-slate-500 italic">"Woch aut!"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong panggil ambulans.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Please call an ambulance.</p><p class="text-[12px] text-slate-500 italic">"Plis kol en embyulens."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tidak enak badan.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I don't feel well.</p><p class="text-[12px] text-slate-500 italic">"Ai don fil wel."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana apotek?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is the pharmacy?</p><p class="text-[12px] text-slate-500 italic">"Wer is de farmasi?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya kehilangan dompet saya.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I lost my wallet.</p><p class="text-[12px] text-slate-500 italic">"Ai lost mai wolet."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tolong bantu saya.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Please help me.</p><p class="text-[12px] text-slate-500 italic">"Plis help mi."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Bisa pinjam telepon Anda?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Can I use your phone?</p><p class="text-[12px] text-slate-500 italic">"Ken ai yus yor fon?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya butuh air.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I need water.</p><p class="text-[12px] text-slate-500 italic">"Ai nid woter."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Berapa lama lagi?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">How much longer?</p><p class="text-[12px] text-slate-500 italic">"Hau mach longer?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Saya tidak tahu.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">I don't know.</p><p class="text-[12px] text-slate-500 italic">"Ai don no."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Boleh saya masuk?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">May I come in?</p><p class="text-[12px] text-slate-500 italic">"Mei ai kam in?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Tunggu saya di sini.</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Wait for me here.</p><p class="text-[12px] text-slate-500 italic">"Weit for mi hir."</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Apa ini?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">What is this?</p><p class="text-[12px] text-slate-500 italic">"Wot is dis?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Siapa dia?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Who is he/she?</p><p class="text-[12px] text-slate-500 italic">"Hu is hi/syi?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Kapan kita berangkat?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">When are we leaving?</p><p class="text-[12px] text-slate-500 italic">"Wen ar wi living?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-[13px] text-slate-900">Di mana koper saya?</h3></div>
+                        <div class="p-4 flex items-center justify-between">
+                            <div><p class="text-[16px] font-black text-slate-900 mb-1">Where is my luggage?</p><p class="text-[12px] text-slate-500 italic">"Wer is mai lagij?"</p></div>
+                            <button class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-volume-up"></i></button>
                         </div>
                     </div>
                 </div>
@@ -332,10 +795,12 @@
 
             <!-- 7. KOMPAS -->
             <div id="screen-kompas" class="screen">
-                <header class="flex justify-between items-center px-5 pt-12 pb-4 bg-emerald-700 z-10 shrink-0 text-white shadow-md">
-                    <button onclick="navTo('screen-dasbor')" class="p-1 -ml-1 text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
+                <header class="flex justify-between items-center px-4 pt-10 pb-3 bg-white border-b border-slate-100 z-10 shrink-0 text-slate-900 shadow-sm">
+                    <button onclick="navTo('screen-dasbor')" class="p-1 -ml-1 text-slate-700"><i class="fas fa-chevron-left text-lg"></i></button>
                     <h1 class="text-[16px] font-bold text-center flex-1">Arah ke Hotel</h1>
-                    <div class="w-8"></div>
+                    <div class="flex justify-end items-center w-10">
+                        <img src="img/ByteTripCompass_logo.jpg" class="h-6 object-contain mix-blend-multiply">
+                    </div>
                 </header>
                 <div class="scrollable-content flex flex-col items-center justify-center p-6 pb-28 text-center bg-slate-50">
                     <h2 class="text-2xl font-black text-slate-900 mb-1">Pullman Zamzam</h2>
@@ -347,7 +812,7 @@
                         <span class="absolute top-2 text-xs font-bold text-emerald-600">DEPAN</span>
                     </div>
                     <div class="bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 font-medium text-[12px] flex items-start gap-3">
-                        <svg class="w-6 h-6 shrink-0 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        <i class="fas fa-info-circle text-xl shrink-0 mt-0.5"></i>
                         <p class="text-left leading-relaxed">Ikuti arah panah merah. Fitur kompas ini terhubung ke GPS dan tidak memerlukan internet.</p>
                     </div>
                 </div>
@@ -360,28 +825,27 @@
         <!-- ============================================== -->
         <nav id="global-bottom-nav" class="hidden absolute bottom-0 w-full bg-white border-t border-slate-200 flex justify-between items-center px-1 py-1 z-30 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <button onclick="navTo('screen-dasbor')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1.5 transition-colors" data-target="screen-dasbor">
-                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <i class="fas fa-dashboard text-xl mb-1"></i>
                 <span class="text-[10px] font-bold">Dasbor</span>
             </button>
             <button onclick="navTo('screen-docs')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1.5 transition-colors" data-target="screen-docs">
-                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <i class="fas fa-folder text-xl mb-1"></i>
                 <span class="text-[10px] font-bold">Dokumen</span>
             </button>
             
-            <!-- CENTER FLOATING BUTTON (DOA) -->
             <div class="flex-1 flex justify-center">
                 <button onclick="navTo('screen-doa')" class="relative -top-6 bg-emerald-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl border-[5px] border-white hover:bg-emerald-800 transition-colors active:scale-95 z-40">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <i class="fas fa-book-open text-xl"></i>
                 </button>
                 <span class="absolute bottom-6 text-[11px] font-bold text-emerald-700">Doa</span>
             </div>
 
             <button onclick="navTo('screen-peta')" class="nav-btn flex flex-col items-center justify-center flex-1 py-1.5 transition-colors" data-target="screen-peta">
-                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                <i class="fas fa-map-marked-alt text-xl mb-1"></i>
                 <span class="text-[10px] font-bold">Peta</span>
             </button>
             <button onclick="toggleLainnyaMenu(true)" class="nav-btn flex flex-col items-center justify-center flex-1 py-1.5 transition-colors" data-target="lainnya">
-                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
+                <i class="fas fa-ellipsis-h text-xl mb-1"></i>
                 <span class="text-[10px] font-bold">Lainnya</span>
             </button>
         </nav>
@@ -398,17 +862,17 @@
                 <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Panduan & Bantuan</div>
                 <div class="flex flex-col gap-1 mb-3">
                     <button onclick="toggleLainnyaMenu(false); setTimeout(() => navTo('screen-kompas'), 300);" class="flex items-center gap-3 w-full py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 rounded-xl px-3 -mx-3 transition-colors">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <i class="fas fa-compass text-slate-400 text-lg w-5 text-center"></i>
                         Kompas
                     </button>
                     <!-- Tambahan Kamus Offline -->
                     <button onclick="toggleLainnyaMenu(false); setTimeout(() => navTo('screen-kamus'), 300);" class="flex items-center gap-3 w-full py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 rounded-xl px-3 -mx-3 transition-colors">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
+                        <i class="fas fa-language text-slate-400 text-lg w-5 text-center"></i>
                         Kamus Offline (Id-En)
                     </button>
                     <!-- Perubahan Nomor Darurat (Modal Trigger) -->
                     <button onclick="toggleLainnyaMenu(false); setTimeout(() => openEmergencyModal(), 300);" class="flex items-center gap-3 w-full py-2.5 text-left text-[14px] font-semibold text-slate-700 hover:bg-slate-50 rounded-xl px-3 -mx-3 transition-colors">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                        <i class="fas fa-phone-alt text-slate-400 text-lg w-5 text-center"></i>
                         Nomor Darurat
                     </button>
                 </div>
@@ -419,7 +883,7 @@
                 <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Akun</div>
                 <div class="flex flex-col gap-1">
                     <button onclick="handleLogout()" class="flex items-center gap-3 w-full py-2.5 text-left text-[14px] font-semibold text-red-600 hover:bg-red-50 rounded-xl px-3 -mx-3 transition-colors">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        <i class="fas fa-sign-out-alt text-red-500 text-lg w-5 text-center"></i>
                         Logout
                     </button>
                 </div>
@@ -434,7 +898,7 @@
         <div id="emergencyModalOverlay" class="absolute inset-0 bg-slate-900/80 z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center px-6">
             <div id="emergencyModalCard" class="bg-white w-full rounded-3xl p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
                 <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <i class="fas fa-phone-alt text-2xl"></i>
                 </div>
                 <h2 class="text-xl font-bold text-center text-slate-900 mb-6">Kontak Darurat</h2>
                 
@@ -444,14 +908,14 @@
                             <p class="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Admin Pusat TDA</p>
                             <p class="text-2xl font-black text-slate-900">+62 811 2345 678</p>
                         </div>
-                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-md"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg></div>
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-md"><i class="fas fa-phone"></i></div>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center active:bg-slate-100 cursor-pointer">
                         <div>
                             <p class="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dubes RI (KSA)</p>
                             <p class="text-2xl font-black text-slate-900">+966 50 123 4567</p>
                         </div>
-                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-md"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg></div>
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-md"><i class="fas fa-phone"></i></div>
                     </div>
                 </div>
 
@@ -462,7 +926,7 @@
         <!-- SOS Modal -->
         <div id="sosModalOverlay" class="absolute inset-0 bg-slate-900/80 z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center px-6">
             <div id="sosModalCard" class="bg-white w-full rounded-3xl p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
-                <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-exclamation-triangle text-3xl"></i></div>
                 <h2 class="text-xl font-bold text-center text-slate-900 mb-2">Kirim Sinyal Darurat?</h2>
                 <p class="text-center text-slate-600 text-[13px] mb-6 font-medium">Lokasi Anda akan dikirimkan ke Ust. Fulan (Tour Leader).</p>
                 <button onclick="sendSOS()" class="w-full bg-red-600 text-white font-bold text-[15px] py-3.5 rounded-xl shadow-md mb-3 active:scale-95 transition-transform">KIRIM LOKASI SAYA</button>
@@ -473,7 +937,7 @@
         <!-- Document Viewer Modal -->
         <div id="docViewerModal" class="absolute inset-0 bg-slate-900 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
             <header class="flex items-center justify-between px-4 pt-12 pb-3 bg-slate-800 text-white shrink-0 z-20 shadow-md">
-                <button onclick="closeDocViewer()" class="p-1 -ml-1 text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <button onclick="closeDocViewer()" class="p-1 -ml-1 text-white"><i class="fas fa-times text-xl"></i></button>
                 <h2 id="doc-viewer-title" class="text-[15px] font-bold flex-1 text-center">Dokumen</h2>
                 <div class="w-8"></div>
             </header>
@@ -482,23 +946,24 @@
             </div>
         </div>
 
-        <!-- Map Image Modal -->
+        <!-- REAL OSM MAP MODAL -->
         <div id="imgMapModal" class="absolute inset-0 bg-slate-50 z-50 transform translate-y-full transition-transform duration-300 flex flex-col">
-            <header class="flex items-center px-4 pt-12 pb-3 bg-emerald-700 text-white shrink-0 shadow-md z-20">
-                <button onclick="closeMapModal()" class="p-1 -ml-1 text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
-                <div class="flex-1 ml-3"><h2 id="map-modal-title" class="text-[15px] font-bold leading-tight">Rute ke Lokasi</h2><p class="text-[11px] text-emerald-100">Peta Offline</p></div>
+            <header class="flex items-center px-4 pt-10 pb-3 bg-emerald-700 text-white shrink-0 shadow-md z-20">
+                <button onclick="closeMapModal()" class="p-1 -ml-1 text-white"><i class="fas fa-chevron-left text-lg"></i></button>
+                <div class="flex-1 ml-3"><h2 id="map-modal-title" class="text-[15px] font-bold leading-tight">Rute ke Lokasi</h2><p class="text-[11px] text-emerald-100">Peta Offline OSM</p></div>
             </header>
             <div class="flex-1 relative p-4 flex flex-col items-center justify-center">
-                <div class="w-full h-[60%] rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-white relative">
-                    <img src="https://placehold.co/600x800/e2e8f0/10b981?text=Ilustrasi+Peta+Offline\n(Rute+Navigasi)" class="w-full h-full object-cover">
-                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"><svg class="w-10 h-10 text-red-500 drop-shadow-md" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg></div>
+                <!-- Container Peta Nyata -->
+                <div class="w-full h-[60%] rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-slate-200 relative z-10">
+                    <div id="real-osm-map" class="w-full h-full absolute inset-0"></div>
                 </div>
-                <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mt-6">
+                
+                <div class="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mt-6 z-10">
                     <div class="flex justify-between items-center mb-4">
-                        <div><p class="text-[11px] font-bold text-slate-500 uppercase">Jarak</p><p class="text-xl font-black text-slate-900">450 m</p></div>
-                        <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold text-[13px]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg> 6 Menit</div>
+                        <div><p class="text-[11px] font-bold text-slate-500 uppercase">Estimasi Jarak</p><p class="text-xl font-black text-slate-900" id="map-distance">450 m</p></div>
+                        <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold text-[13px]"><i class="fas fa-walking"></i> <span id="map-time">6 Menit</span></div>
                     </div>
-                    <button class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl active:bg-emerald-700 transition-colors shadow-md">Mulai Jalan</button>
+                    <button onclick="closeMapModal(); setTimeout(() => navTo('screen-kompas'), 300);" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl active:bg-emerald-700 transition-colors shadow-md">Mulai Jalan (Buka Kompas)</button>
                 </div>
             </div>
             <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-1/3 h-1.5 bg-slate-800 rounded-full z-50"></div>
@@ -507,6 +972,7 @@
     </div>
 
     <!-- Script Navigation & Logic -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const globalNav = document.getElementById('global-bottom-nav');
         const homeIndicator = document.getElementById('home-indicator');
@@ -549,17 +1015,15 @@
                 const target = btn.getAttribute('data-target');
                 if(!target) return;
                 
-                const svg = btn.querySelector('svg');
+                const icon = btn.querySelector('i');
                 if (target === 'screen-doa') return; 
 
                 if (target === activeScreenId || (target === 'lainnya' && activeScreenId === 'screen-kompas') || (target === 'lainnya' && activeScreenId === 'screen-kamus')) {
                     btn.classList.add('text-emerald-700');
                     btn.classList.remove('text-slate-400');
-                    svg.setAttribute('fill', 'currentColor');
                 } else {
                     btn.classList.add('text-slate-400');
                     btn.classList.remove('text-emerald-700');
-                    svg.setAttribute('fill', 'none');
                 }
             });
         }
@@ -616,7 +1080,7 @@
         function sendSOS() {
             const card = document.getElementById('sosModalCard');
             card.innerHTML = `
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-check text-3xl"></i></div>
                 <h2 class="text-xl font-bold text-center text-slate-900 mb-2">Terkirim!</h2>
                 <p class="text-center text-slate-600 text-[13px] mb-6 font-medium">Ust. Fulan sedang melacak lokasi Anda.</p>
                 <button onclick="toggleSOSModal(false)" class="w-full bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl active:bg-slate-200 transition-colors">Tutup</button>`;
@@ -636,25 +1100,63 @@
             setTimeout(() => overlay.classList.add('hidden'), 300);
         }
 
+        // ==========================================
+        // OPENSTREETMAP (LEAFLET.JS) LOGIC
+        // ==========================================
+        let osmMap = null;
+        let mapMarker = null;
+
         function openMapModal(title) {
             document.getElementById('map-modal-title').textContent = title;
             document.getElementById('imgMapModal').classList.remove('translate-y-full');
+            
+            const dist = Math.floor(Math.random() * 800) + 150;
+            document.getElementById('map-distance').textContent = dist + " m";
+            document.getElementById('map-time').textContent = Math.ceil(dist / 70) + " Menit";
+
+            setTimeout(() => {
+                if (!osmMap) {
+                    osmMap = L.map('real-osm-map', {zoomControl: false}).setView([21.4225, 39.8262], 16);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap'
+                    }).addTo(osmMap);
+                    
+                    const defaultIcon = L.icon({
+                        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                    });
+                    
+                    mapMarker = L.marker([21.4225, 39.8262], {icon: defaultIcon}).addTo(osmMap);
+                } else {
+                    osmMap.invalidateSize(); 
+                }
+                
+                let lat = 21.4225; 
+                let lng = 39.8262;
+                
+                const titleLower = title.toLowerCase();
+                if(titleLower.includes('madinah') || titleLower.includes('baqi') || titleLower.includes('nabawi') || titleLower.includes('miqot')) {
+                    lat = 24.4672; 
+                    lng = 39.6111;
+                }
+                
+                lat += (Math.random() - 0.5) * 0.005;
+                lng += (Math.random() - 0.5) * 0.005;
+                
+                osmMap.setView([lat, lng], 16);
+                mapMarker.setLatLng([lat, lng]);
+                mapMarker.bindPopup("<b>" + title + "</b>").openPopup();
+                
+            }, 350); 
         }
 
         function closeMapModal() {
             document.getElementById('imgMapModal').classList.add('translate-y-full');
         }
 
-        // ==========================================
-        // PWA SERVICE WORKER REGISTRATION (JALUR 1)
-        // ==========================================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker Registered Successfully', reg))
-                    .catch(err => console.error('Service Worker Registration Failed', err));
-            });
-        }
     </script>
 </body>
 </html>
