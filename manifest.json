@@ -1,6 +1,6 @@
 {
   "name": "ByteTrip Compass",
-  "short_name": "ByteTrip",
+  "short_name": "ByteCompass",
   "description": "Sahabat Setia Perjalanan Anda",
   "start_url": "index.html",
   "display": "standalone",
